@@ -44,3 +44,34 @@ jobs:
       - name: Push Docker image
         run: docker push ghcr.io/lanafarrage/git_actions_ci_cd:latest
 
+  
+  
+  deploy:
+    needs: test
+    runs-on: [self-hosted, macOS, X64]
+    permissions:
+      packages: read
+
+    steps:
+      - name: Check Docker
+        run: docker info
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull latest image
+        run: docker pull ghcr.io/lanafarrage/git_actions_ci_cd:latest
+
+      - name: Stop old container
+        run: |
+          docker stop django-ci-test || true
+          docker rm django-ci-test || true
+
+      - name: Run updated container
+        run: |
+          docker run -d \
+            --name django-ci-test \
+            -p 8000:8000 \
+            ghcr.io/lanafarrage/git_actions_ci_cd:latest
+
