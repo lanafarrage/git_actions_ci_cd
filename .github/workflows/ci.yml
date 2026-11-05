@@ -1,33 +1,46 @@
+
 name: CI
+
 on:
   push:
-   branches: [main]
+    branches: [main]
   workflow_dispatch:
+
 jobs:
   test:
     runs-on: ubuntu-24.04
+
     permissions:
       contents: read
       packages: write
+
     steps:
-    - uses: actions/checkout@v5
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.11'
-    - name: Install dependencies
-      run: pip install -r requirements.txt
-    - name: Django system check
-      run: python manage.py check
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v4
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
-    - name: Build Docker image
-      run: docker build -t ghcr.io/lanafarrage/git_actions_ci_cd.git .
-    - name: Push Docker image
-      run: docker push ghcr.io/lanafarrage/git_actions_ci_cd.git
+      - name: Install dependencies
+        working-directory: portfolioActions
+        run: pip install -r requirements.txt
+
+      - name: Django system check
+        working-directory: portfolioActions
+        run: python manage.py check
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t ghcr.io/lanafarrage/git_actions_ci_cd:latest -f portfolioActions/Dockerfile portfolioActions
+
+      - name: Push Docker image
+        run: docker push ghcr.io/lanafarrage/git_actions_ci_cd:latest
 
